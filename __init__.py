@@ -92,6 +92,24 @@ try:
 
     print("[MotionCapture] API endpoint registered: /motioncapture/fbx_files")
 
+    @PromptServer.instance.routes.get('/motioncapture/npz_files')
+    async def get_npz_files(request):
+        """API endpoint to fetch NPZ file list dynamically."""
+        source = request.query.get('source_folder', 'output')
+
+        try:
+            if source == "input":
+                files = LoadSMPL.get_npz_files_from_input()
+            else:
+                files = LoadSMPL.get_npz_files_from_output()
+
+            return web.json_response(files)
+        except Exception as e:
+            print(f"[MotionCapture API] Error getting NPZ files: {e}")
+            return web.json_response([])
+
+    print("[MotionCapture] API endpoint registered: /motioncapture/npz_files")
+
 except Exception as e:
     print(f"[MotionCapture] Warning: Could not register API endpoints: {e}")
     print("[MotionCapture] FBX file browsing will not work without PromptServer")

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Tuple, List
 import folder_paths
 
-from .utils import Log
+from hmr4d.utils.pylogger import Log
 
 
 class LoadFBXCharacter:

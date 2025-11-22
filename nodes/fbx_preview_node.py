@@ -3,7 +3,7 @@ FBX Preview Node - Interactive 3D viewer for FBX characters
 """
 
 from typing import Tuple
-from .utils import Log
+from hmr4d.utils.pylogger import Log
 
 
 class FBXPreview:

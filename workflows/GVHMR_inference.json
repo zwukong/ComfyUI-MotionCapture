@@ -1,8 +1,8 @@
 {
   "id": "719289ad-2923-495c-aacd-265123a5630e",
   "revision": 0,
-  "last_node_id": 6,
-  "last_link_id": 5,
+  "last_node_id": 8,
+  "last_link_id": 7,
   "nodes": [
     {
       "id": 2,
@@ -90,9 +90,10 @@
         }
       ],
       "properties": {
-        "aux_id": "Kosinkadink/ComfyUI-VideoHelperSuite",
+        "cnr_id": "comfyui-videohelpersuite",
         "ver": "8923bd836bdab8b7bbdf4ed104b7d045e70c66e2",
-        "Node name for S&R": "VHS_LoadVideo"
+        "Node name for S&R": "VHS_LoadVideo",
+        "aux_id": "Kosinkadink/ComfyUI-VideoHelperSuite"
       },
       "widgets_values": {
         "video": "tennis.mp4",
@@ -174,9 +175,10 @@
         }
       ],
       "properties": {
-        "aux_id": "Kosinkadink/ComfyUI-VideoHelperSuite",
+        "cnr_id": "comfyui-videohelpersuite",
         "ver": "8923bd836bdab8b7bbdf4ed104b7d045e70c66e2",
-        "Node name for S&R": "VHS_LoadVideo"
+        "Node name for S&R": "VHS_LoadVideo",
+        "aux_id": "Kosinkadink/ComfyUI-VideoHelperSuite"
       },
       "widgets_values": {
         "video": "tennis_mask.mp4",
@@ -248,8 +250,8 @@
       "id": 1,
       "type": "GVHMRInference",
       "pos": [
-        550.309768324493,
-        96.54118721107966
+        447.46337747648363,
+        46.02946814719762
       ],
       "size": [
         270,
@@ -279,14 +281,15 @@
         {
           "name": "smpl_params",
           "type": "SMPL_PARAMS",
-          "links": null
+          "links": [
+            6,
+            7
+          ]
         },
         {
           "name": "visualization",
           "type": "IMAGE",
-          "links": [
-            5
-          ]
+          "links": []
         },
         {
           "name": "info",
@@ -306,32 +309,85 @@
       ]
     },
     {
-      "id": 6,
-      "type": "PreviewImage",
+      "id": 8,
+      "type": "SaveSMPL",
       "pos": [
-        936.7521469230131,
-        142.9763356287175
+        592.2375404957705,
+        398.3806912189373
       ],
       "size": [
-        140,
-        26
+        270,
+        78
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "smpl_params",
+          "type": "SMPL_PARAMS",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "file_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "aux_id": "PozzettiAndrea/ComfyUI-MotionCapture",
+        "ver": "c8a7572bbce6990005e1375b478d0a12d3ae7bab",
+        "Node name for S&R": "SaveSMPL"
+      },
+      "widgets_values": [
+        "output/tennis.npz"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "SMPLViewer",
+      "pos": [
+        1060.0289222703657,
+        -210.30688843069487
+      ],
+      "size": [
+        400,
+        680
       ],
       "flags": {},
       "order": 5,
       "mode": 0,
       "inputs": [
         {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 5
+          "name": "smpl_params",
+          "type": "SMPL_PARAMS",
+          "link": 6
         }
       ],
-      "outputs": [],
+      "outputs": [
+        {
+          "name": "viewer_data",
+          "type": "SMPL_VIEWER",
+          "links": null
+        }
+      ],
       "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.3.71",
-        "Node name for S&R": "PreviewImage"
-      }
+        "aux_id": "PozzettiAndrea/ComfyUI-MotionCapture",
+        "ver": "45382cf569f3b26337611ddfd3328c0fe47208f2",
+        "Node name for S&R": "SMPLViewer"
+      },
+      "widgets_values": [
+        1,
+        "#4a9eff",
+        ""
+      ]
     }
   ],
   "links": [
@@ -368,12 +424,20 @@
       "MASK"
     ],
     [
-      5,
-      1,
-      1,
       6,
+      1,
       0,
-      "IMAGE"
+      7,
+      0,
+      "SMPL_PARAMS"
+    ],
+    [
+      7,
+      1,
+      0,
+      8,
+      0,
+      "SMPL_PARAMS"
     ]
   ],
   "groups": [],
@@ -382,8 +446,8 @@
     "ds": {
       "scale": 0.6621297615648718,
       "offset": [
-        823.6656256374167,
-        572.4470639787161
+        537.3677965794161,
+        533.7734983032163
       ]
     },
     "frontendVersion": "1.30.6",

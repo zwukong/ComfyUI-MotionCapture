@@ -107,8 +107,13 @@ const ANIMATION_VIEWER_HTML = `
         function loadFBX(path) {
             const loader = new FBXLoader();
 
+            // Ensure absolute URL if not already (parent sends absolute, but be safe)
+            const url = path.startsWith('http') || path.startsWith('blob:')
+                ? path
+                : \`\${window.parent.location.origin}\${path}\`;
+
             loader.load(
-                path,
+                url,
                 (fbx) => {
                     console.log('[FBXAnimationViewer] FBX loaded successfully');
 
@@ -699,9 +704,23 @@ app.registerExtension({
                     return;
                 }
 
-                const viewPath = `/view?filename=${encodeURIComponent(fbxPath)}`;
+                // Convert absolute path to relative path for /view endpoint
+                // ComfyUI's /view expects filenames relative to input/output dirs
+                let relativePath = fbxPath;
+                if (fbxPath.includes('/output/')) {
+                    relativePath = fbxPath.split('/output/')[1];
+                } else if (fbxPath.includes('/input/')) {
+                    relativePath = fbxPath.split('/input/')[1];
+                } else {
+                    // Just use the basename if no standard directory found
+                    relativePath = fbxPath.split('/').pop();
+                }
+
+                // Construct absolute URL (iframe runs from blob URL, needs absolute path)
+                const viewPath = `${window.location.origin}/view?filename=${encodeURIComponent(relativePath)}`;
                 console.log("[FBXAnimationViewer] Sending LOAD_FBX message to iframe");
-                console.log("[FBXAnimationViewer] View path:", viewPath);
+                console.log("[FBXAnimationViewer] Relative path:", relativePath);
+                console.log("[FBXAnimationViewer] View URL:", viewPath);
 
                 this.animationViewerIframe.contentWindow.postMessage({
                     type: 'LOAD_FBX',
@@ -720,13 +739,15 @@ app.registerExtension({
                     onExecuted.apply(this, arguments);
                 }
 
-                // Get fbx_path from output
-                if (message && message[0]) {
-                    const fbxPath = message[0];
+                // Get fbx_path from output (message is object with named keys from RETURN_NAMES)
+                if (message?.fbx_path?.[0]) {
+                    const fbxPath = message.fbx_path[0];
                     console.log("[FBXAnimationViewer] ✓ Node executed with FBX path:", fbxPath);
                     this.loadAnimationInViewer(fbxPath);
                 } else {
-                    console.warn("[FBXAnimationViewer] ⚠ No FBX path in message");
+                    console.warn("[FBXAnimationViewer] ⚠ No fbx_path in message");
+                    console.warn("[FBXAnimationViewer] Available keys:", Object.keys(message || {}));
+                    console.warn("[FBXAnimationViewer] Full message:", message);
                 }
             };
         }

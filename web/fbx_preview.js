@@ -161,9 +161,24 @@ const VIEWER_HTML = `
 
             const loader = new FBXLoader();
 
+            // Convert absolute path to relative path for /view endpoint
+            // ComfyUI's /view expects filenames relative to input/output dirs
+            let relativePath = filepath;
+            if (filepath.includes('/output/')) {
+                relativePath = filepath.split('/output/')[1];
+            } else if (filepath.includes('/input/')) {
+                relativePath = filepath.split('/input/')[1];
+            } else if (!filepath.startsWith('http')) {
+                // Just use the basename if no standard directory found
+                relativePath = filepath.split('/').pop();
+            }
+
             // FBX files need to be served - use the file path directly
             // ComfyUI serves files from input/output directories
-            const url = filepath.startsWith('http') ? filepath : \`/view?filename=\${encodeURIComponent(filepath)}\`;
+            // Use absolute URL since iframe runs from blob URL context
+            const url = filepath.startsWith('http')
+                ? filepath
+                : \`\${window.parent.location.origin}/view?filename=\${encodeURIComponent(relativePath)}\`;
 
             loader.load(
                 url,
@@ -403,15 +418,22 @@ app.registerExtension({
             // Override onExecuted to load FBX when node executes
             const onExecuted = nodeType.prototype.onExecuted;
             nodeType.prototype.onExecuted = function(message) {
+                console.log("[FBXPreview] onExecuted called");
+                console.log("[FBXPreview] Message:", message);
+
                 if (onExecuted) {
                     onExecuted.apply(this, arguments);
                 }
 
-                // Get fbx_path from output
-                if (message && message[0]) {
-                    const fbxPath = message[0];
+                // Get fbx_path from output (message is object with named keys from RETURN_NAMES)
+                if (message?.fbx_path?.[0]) {
+                    const fbxPath = message.fbx_path[0];
                     console.log("[FBXPreview] Node executed with FBX path:", fbxPath);
                     this.loadFBXInViewer(fbxPath);
+                } else {
+                    console.warn("[FBXPreview] No fbx_path in message");
+                    console.warn("[FBXPreview] Available keys:", Object.keys(message || {}));
+                    console.warn("[FBXPreview] Full message:", message);
                 }
             };
         }

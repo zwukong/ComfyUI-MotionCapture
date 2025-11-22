@@ -28,7 +28,7 @@ class FBXPreview:
     OUTPUT_NODE = True
     CATEGORY = "MotionCapture"
 
-    def preview(self, fbx_path: str) -> Tuple[str,]:
+    def preview(self, fbx_path: str):
         """
         Display FBX preview in ComfyUI UI.
 
@@ -36,21 +36,29 @@ class FBXPreview:
             fbx_path: Absolute path to FBX file
 
         Returns:
-            Tuple with fbx_path (passthrough)
+            Dict with ui key for web extension
         """
         try:
             Log.info(f"[FBXPreview] Displaying preview for: {fbx_path}")
 
             # The actual preview is handled by the web extension
-            # This node just passes through the path to the frontend
-            return (fbx_path,)
+            # Return ui dict to send data to onExecuted callback
+            return {
+                "ui": {
+                    "fbx_path": [fbx_path]
+                }
+            }
 
         except Exception as e:
             error_msg = f"FBXPreview failed: {str(e)}"
             Log.error(error_msg)
             import traceback
             traceback.print_exc()
-            return ("",)
+            return {
+                "ui": {
+                    "fbx_path": [""]
+                }
+            }
 
 
 NODE_CLASS_MAPPINGS = {

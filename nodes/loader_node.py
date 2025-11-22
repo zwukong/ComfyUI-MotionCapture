@@ -6,7 +6,6 @@ import os
 import sys
 from pathlib import Path
 import torch
-import gdown
 
 # Add vendor path for GVHMR
 VENDOR_PATH = Path(__file__).parent.parent / "vendor"
@@ -26,11 +25,20 @@ class LoadGVHMRModels:
     Downloads models automatically if missing (except SMPL body models).
     """
 
-    # Model download URLs
-    MODEL_URLS = {
-        "gvhmr": "https://drive.google.com/uc?id=1b9G5TsviBW6B0EM8F8bXJKlc3mY1b4JH",  # gvhmr_siga24_release.ckpt
-        "vitpose": "https://drive.google.com/uc?id=1pJRlkyDJm2xlyNeXmVf1rCL0n3chVp_0",  # vitpose-h-multi-coco.pth
-        "hmr2": "https://drive.google.com/uc?id=1OLxLxwirN5EqMYnHBdkl5IHJqVcNGPGj",  # hmr2 checkpoint
+    # Model download configuration (HuggingFace)
+    MODEL_CONFIGS = {
+        "gvhmr": {
+            "repo_id": "camenduru/GVHMR",
+            "filename": "gvhmr/gvhmr_siga24_release.ckpt",
+        },
+        "vitpose": {
+            "repo_id": "camenduru/GVHMR",
+            "filename": "vitpose/vitpose-h-multi-coco.pth",
+        },
+        "hmr2": {
+            "repo_id": "camenduru/GVHMR",
+            "filename": "hmr2/epoch=10-step=25000.ckpt",
+        },
     }
 
     def __init__(self):
@@ -57,20 +65,35 @@ class LoadGVHMRModels:
     CATEGORY = "MotionCapture/GVHMR"
 
     def check_and_download_model(self, model_name: str, target_path: Path) -> bool:
-        """Check if model exists, download if missing."""
+        """Check if model exists, download from HuggingFace if missing."""
         if target_path.exists():
             Log.info(f"[LoadGVHMRModels] {model_name} found at {target_path}")
             return True
 
-        if model_name not in self.MODEL_URLS:
-            Log.error(f"[LoadGVHMRModels] No download URL for {model_name}")
+        if model_name not in self.MODEL_CONFIGS:
+            Log.error(f"[LoadGVHMRModels] No download config for {model_name}")
             return False
 
-        Log.info(f"[LoadGVHMRModels] Downloading {model_name}...")
+        try:
+            from huggingface_hub import hf_hub_download
+        except ImportError:
+            Log.error("[LoadGVHMRModels] huggingface_hub not installed. Run: pip install huggingface_hub")
+            return False
+
+        config = self.MODEL_CONFIGS[model_name]
+        Log.info(f"[LoadGVHMRModels] Downloading {model_name} from HuggingFace...")
+        Log.info(f"[LoadGVHMRModels] Repository: {config['repo_id']}")
         target_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
-            gdown.download(self.MODEL_URLS[model_name], str(target_path), quiet=False)
+            downloaded_path = hf_hub_download(
+                repo_id=config["repo_id"],
+                filename=config["filename"],
+                cache_dir=str(self.models_dir / "_hf_cache"),
+            )
+            # Copy to target location
+            import shutil
+            shutil.copy(downloaded_path, str(target_path))
             Log.info(f"[LoadGVHMRModels] Downloaded {model_name} to {target_path}")
             return True
         except Exception as e:
@@ -204,6 +227,15 @@ class LoadGVHMRModels:
         with initialize_config_module(version_base="1.3", config_module="hmr4d.configs"):
             register_store_gvhmr()
             cfg = compose(config_name="demo", overrides=["static_cam=True", "verbose=False"])
+
+        # Check if rendering is available
+        try:
+            from hmr4d.utils.vis.renderer import PYTORCH3D_AVAILABLE
+            if not PYTORCH3D_AVAILABLE:
+                Log.warn("[LoadGVHMRModels] PyTorch3D not installed - visualization rendering will be disabled")
+                Log.warn("[LoadGVHMRModels] SMPL parameters will still be extracted successfully")
+        except Exception:
+            pass
 
         # Load GVHMR model
         Log.info(f"[LoadGVHMRModels] Loading GVHMR from {gvhmr_path}...")

@@ -237,6 +237,13 @@ class GVHMRInference:
         Render SMPL mesh overlay on input images.
         """
         try:
+            # Check if rendering is available
+            from hmr4d.utils.vis.renderer import PYTORCH3D_AVAILABLE
+            if not PYTORCH3D_AVAILABLE:
+                Log.warn("[GVHMRInference] PyTorch3D not available - skipping visualization rendering")
+                Log.info("[GVHMRInference] Returning original images (SMPL parameters were extracted successfully)")
+                return images
+
             device = model["device"]
             batch_size, height, width, channels = images.shape
 
@@ -274,7 +281,8 @@ class GVHMRInference:
             return rendered_tensor
 
         except Exception as e:
-            Log.error(f"Visualization rendering failed: {e}")
+            Log.warn(f"[GVHMRInference] Visualization rendering failed: {e}")
+            Log.info("[GVHMRInference] Returning original images (SMPL parameters were extracted successfully)")
             # Return original images if rendering fails
             return images
 

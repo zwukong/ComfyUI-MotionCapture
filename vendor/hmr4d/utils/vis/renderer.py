@@ -2,19 +2,27 @@ import cv2
 import torch
 import numpy as np
 
-from pytorch3d.renderer import (
-    PerspectiveCameras,
-    TexturesVertex,
-    PointLights,
-    Materials,
-    RasterizationSettings,
-    MeshRenderer,
-    MeshRasterizer,
-    SoftPhongShader,
-)
-from pytorch3d.structures import Meshes
-from pytorch3d.structures.meshes import join_meshes_as_scene
-from pytorch3d.renderer.cameras import look_at_rotation
+# Try to import pytorch3d, but allow module to load without it
+PYTORCH3D_AVAILABLE = False
+try:
+    from pytorch3d.renderer import (
+        PerspectiveCameras,
+        TexturesVertex,
+        PointLights,
+        Materials,
+        RasterizationSettings,
+        MeshRenderer,
+        MeshRasterizer,
+        SoftPhongShader,
+    )
+    from pytorch3d.structures import Meshes
+    from pytorch3d.structures.meshes import join_meshes_as_scene
+    from pytorch3d.renderer.cameras import look_at_rotation
+    PYTORCH3D_AVAILABLE = True
+except ImportError:
+    # PyTorch3D not available - rendering will be disabled
+    pass
+
 from hmr4d.utils.pytorch3d_shim import axis_angle_to_matrix
 
 from .renderer_tools import get_colors, checkerboard_geometry
@@ -105,6 +113,12 @@ def compute_bbox_from_points(X, img_w, img_h, scaleFactor=1.2):
 class Renderer:
     def __init__(self, width, height, focal_length=None, device="cuda", faces=None, K=None, bin_size=None):
         """set bin_size to 0 for no binning"""
+        if not PYTORCH3D_AVAILABLE:
+            raise ImportError(
+                "PyTorch3D is not installed. Renderer cannot be used. "
+                "To enable visualization, install pytorch3d: pip install pytorch3d"
+            )
+
         self.width = width
         self.height = height
         self.bin_size = bin_size
@@ -281,6 +295,8 @@ def create_meshes(verts, faces, colors):
     :param faces (B, F, 3)
     :param colors (B, V, 3)
     """
+    if not PYTORCH3D_AVAILABLE:
+        raise ImportError("PyTorch3D is required for create_meshes")
     textures = TexturesVertex(verts_features=colors)
     meshes = Meshes(verts=verts, faces=faces, textures=textures)
     return join_meshes_as_scene(meshes)
@@ -288,6 +304,9 @@ def create_meshes(verts, faces, colors):
 
 def get_global_cameras(verts, device="cuda", distance=5, position=(-5.0, 5.0, 0.0)):
     """This always put object at the center of view"""
+    if not PYTORCH3D_AVAILABLE:
+        raise ImportError("PyTorch3D is required for get_global_cameras")
+
     positions = torch.tensor([position]).repeat(len(verts), 1)
     targets = verts.mean(1)
 
@@ -305,6 +324,9 @@ def get_global_cameras(verts, device="cuda", distance=5, position=(-5.0, 5.0, 0.
 def get_global_cameras_static(
     verts, beta=4.0, cam_height_degree=30, target_center_height=1.0, use_long_axis=False, vec_rot=45, device="cuda"
 ):
+    if not PYTORCH3D_AVAILABLE:
+        raise ImportError("PyTorch3D is required for get_global_cameras_static")
+
     L, V, _ = verts.shape
 
     # Compute target trajectory, denote as center + scale

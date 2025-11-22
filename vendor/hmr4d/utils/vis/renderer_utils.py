@@ -1,10 +1,21 @@
-from hmr4d.utils.vis.renderer import Renderer
 from tqdm import tqdm
 import numpy as np
+
+# Try to import Renderer, but allow module to load without it
+RENDERER_AVAILABLE = False
+try:
+    from hmr4d.utils.vis.renderer import Renderer, PYTORCH3D_AVAILABLE
+    RENDERER_AVAILABLE = PYTORCH3D_AVAILABLE
+except ImportError:
+    # Renderer not available - rendering functions will be disabled
+    pass
 
 
 def simple_render_mesh(render_dict):
     """Render an camera-space mesh, blank background"""
+    if not RENDERER_AVAILABLE:
+        raise ImportError("PyTorch3D/Renderer not available. Cannot render meshes.")
+
     width, height, focal_length = render_dict["whf"]
     faces = render_dict["faces"]
     verts = render_dict["verts"]
@@ -20,6 +31,9 @@ def simple_render_mesh(render_dict):
 
 def simple_render_mesh_background(render_dict, VI=50, colors=[0.8, 0.8, 0.8]):
     """Render an camera-space mesh, blank background"""
+    if not RENDERER_AVAILABLE:
+        raise ImportError("PyTorch3D/Renderer not available. Cannot render meshes.")
+
     K = render_dict["K"]
     faces = render_dict["faces"]
     verts = render_dict["verts"]

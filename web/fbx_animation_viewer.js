@@ -599,14 +599,19 @@ app.registerExtension({
                             break;
 
                         case 'ANIMATIONS_LOADED':
-                            console.log("[FBXAnimationViewer] Animations loaded:", data.animations);
+                            console.log("[FBXAnimationViewer] ✓ Animations loaded successfully!");
+                            console.log("[FBXAnimationViewer] Animation count:", data.animations.length);
+                            console.log("[FBXAnimationViewer] Animation details:", data.animations);
+
                             animationSelect.innerHTML = '';
                             data.animations.forEach(anim => {
                                 const option = document.createElement('option');
                                 option.value = anim.index;
                                 option.textContent = anim.name;
                                 animationSelect.appendChild(option);
+                                console.log(`[FBXAnimationViewer]   - Animation ${anim.index}: "${anim.name}" (${anim.duration.toFixed(2)}s)`);
                             });
+
                             // Enable controls
                             playPauseBtn.disabled = false;
                             resetBtn.disabled = false;
@@ -614,6 +619,7 @@ app.registerExtension({
                             speedControl.disabled = false;
                             loopCheckbox.disabled = false;
                             animationSelect.disabled = data.animations.length <= 1;
+                            console.log("[FBXAnimationViewer] ✓ Controls enabled, ready to play");
                             break;
 
                         case 'TIME_UPDATE':
@@ -636,6 +642,7 @@ app.registerExtension({
                             break;
 
                         case 'NO_ANIMATIONS':
+                            console.warn("[FBXAnimationViewer] ⚠ No animations found in FBX file");
                             playPauseBtn.textContent = 'No Animation';
                             playPauseBtn.disabled = true;
                             break;
@@ -650,7 +657,6 @@ app.registerExtension({
                     }
                     const viewerHeight = Math.max(300, size[1] - 280);
                     viewerContainer.style.height = viewerHeight + "px";
-                    console.log(`[FBXAnimationViewer] Node resized to: ${size[0]}x${size[1]}, viewer height: ${viewerHeight}px`);
                 };
 
                 // Override onDrawForeground to sync viewer height
@@ -679,20 +685,24 @@ app.registerExtension({
 
             // Add method to load FBX
             nodeType.prototype.loadAnimationInViewer = function(fbxPath) {
+                console.log("[FBXAnimationViewer] loadAnimationInViewer called with:", fbxPath);
+
                 if (!this.animationViewerIframe || !this.animationViewerIframe.contentWindow) {
-                    console.warn("[FBXAnimationViewer] Iframe not ready");
+                    console.warn("[FBXAnimationViewer] Iframe not ready, deferring load");
                     this.fbxPathToLoad = fbxPath;
                     return;
                 }
 
                 if (!this.animationViewerReady) {
-                    console.log("[FBXAnimationViewer] Viewer not ready yet, will load when ready");
+                    console.log("[FBXAnimationViewer] Viewer not ready yet, deferring load");
                     this.fbxPathToLoad = fbxPath;
                     return;
                 }
 
-                console.log("[FBXAnimationViewer] Loading FBX:", fbxPath);
                 const viewPath = `/view?filename=${encodeURIComponent(fbxPath)}`;
+                console.log("[FBXAnimationViewer] Sending LOAD_FBX message to iframe");
+                console.log("[FBXAnimationViewer] View path:", viewPath);
+
                 this.animationViewerIframe.contentWindow.postMessage({
                     type: 'LOAD_FBX',
                     path: viewPath
@@ -703,6 +713,9 @@ app.registerExtension({
             // Override onExecuted to load FBX when node executes
             const onExecuted = nodeType.prototype.onExecuted;
             nodeType.prototype.onExecuted = function(message) {
+                console.log("[FBXAnimationViewer] onExecuted called");
+                console.log("[FBXAnimationViewer] Message:", message);
+
                 if (onExecuted) {
                     onExecuted.apply(this, arguments);
                 }
@@ -710,8 +723,10 @@ app.registerExtension({
                 // Get fbx_path from output
                 if (message && message[0]) {
                     const fbxPath = message[0];
-                    console.log("[FBXAnimationViewer] Node executed with FBX path:", fbxPath);
+                    console.log("[FBXAnimationViewer] ✓ Node executed with FBX path:", fbxPath);
                     this.loadAnimationInViewer(fbxPath);
+                } else {
+                    console.warn("[FBXAnimationViewer] ⚠ No FBX path in message");
                 }
             };
         }

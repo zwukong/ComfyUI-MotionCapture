@@ -277,6 +277,14 @@ class SMPLtoBVH:
             # Convert axis-angle rotations to Euler angles (ZXY order, BVH standard)
             euler_rotations = self._axis_angle_to_euler(full_pose)  # [F, num_total_joints, 3]
 
+            # Validate rotation ranges to detect potential issues
+            rot_mins = np.min(euler_rotations, axis=(0, 1))
+            rot_maxs = np.max(euler_rotations, axis=(0, 1))
+            Log.info(f"[SMPLtoBVH] Rotation ranges (degrees):")
+            Log.info(f"  Z: [{rot_mins[0]:.1f}, {rot_maxs[0]:.1f}]")
+            Log.info(f"  X: [{rot_mins[1]:.1f}, {rot_maxs[1]:.1f}]")
+            Log.info(f"  Y: [{rot_mins[2]:.1f}, {rot_maxs[2]:.1f}]")
+
             # Write BVH file
             bvh_content = self._write_bvh(
                 euler_rotations,
@@ -350,8 +358,9 @@ class SMPLtoBVH:
                 rot = R.from_rotvec(aa)
 
                 # Convert to Euler angles (ZXY order, intrinsic)
-                # BVH uses ZXY Euler angles in degrees
-                euler_angles = rot.as_euler('zxy', degrees=True)
+                # BVH uses ZXY intrinsic Euler angles in degrees
+                # IMPORTANT: Use uppercase 'ZXY' for intrinsic rotations (not lowercase 'zxy' for extrinsic)
+                euler_angles = rot.as_euler('ZXY', degrees=True)
                 euler[frame, joint] = euler_angles
 
         return euler
@@ -401,7 +410,7 @@ class SMPLtoBVH:
 
             # Root translation (Pelvis)
             tx, ty, tz = translations[frame] * scale
-            frame_data.extend([f"{tz:.6f}", f"{tx:.6f}", f"{ty:.6f}"])  # BVH uses Z-up
+            frame_data.extend([f"{tx:.6f}", f"{ty:.6f}", f"{tz:.6f}"])  # SMPL and BVH both use Y-up (X, Y, Z order)
 
             # Root rotation (Pelvis)
             rz, rx, ry = rotations[frame, 0]
@@ -438,12 +447,12 @@ class SMPLtoBVH:
             lines.append(f"{indent}JOINT {joint_name}")
 
         lines.append(f"{indent}{{")
-        lines.append(f"{indent}  OFFSET {offset_scaled[2]:.6f} {offset_scaled[0]:.6f} {offset_scaled[1]:.6f}")  # Z-up
+        lines.append(f"{indent}  OFFSET {offset_scaled[0]:.6f} {offset_scaled[1]:.6f} {offset_scaled[2]:.6f}")  # X, Y, Z order
 
         # Channels
         if joint_idx == 0:
             # Root has translation + rotation
-            lines.append(f"{indent}  CHANNELS 6 Zposition Xposition Yposition Zrotation Xrotation Yrotation")
+            lines.append(f"{indent}  CHANNELS 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation")
         else:
             # Other joints only have rotation
             lines.append(f"{indent}  CHANNELS 3 Zrotation Xrotation Yrotation")

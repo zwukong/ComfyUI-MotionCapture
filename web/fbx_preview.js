@@ -301,20 +301,10 @@ app.registerExtension({
 
                 // Create iframe widget
                 const container = document.createElement("div");
-                container.style.width = "100%";
-                container.style.height = "500px";
-                container.style.display = "flex";
-                container.style.flexDirection = "column";
-                container.style.border = "2px solid #444";
-                container.style.borderRadius = "8px";
-                container.style.overflow = "hidden";
-                container.style.background = "#1a1a1a";
+                container.style.cssText = "position: relative; width: 100%; height: 500px; display: flex; flex-direction: column; border: 2px solid #444; border-radius: 8px; overflow: hidden; background: #1a1a1a; box-sizing: border-box;";
 
                 const iframe = document.createElement("iframe");
-                iframe.style.width = "100%";
-                iframe.style.height = "100%";
-                iframe.style.border = "none";
-                iframe.style.flex = "1 1 0";
+                iframe.style.cssText = "display: block; max-width: 100%; max-height: 100%; width: 100%; height: 100%; border: none; flex: 1 1 0; object-fit: contain;";
 
                 // Create blob URL for viewer
                 const blob = new Blob([VIEWER_HTML], { type: 'text/html' });
@@ -324,10 +314,17 @@ app.registerExtension({
                 container.appendChild(iframe);
 
                 // Add to node
-                this.addDOMWidget("fbx_preview", "preview", container, {
+                const widget = this.addDOMWidget("fbx_preview", "preview", container, {
                     serialize: false,
                     hideOnZoom: false,
                 });
+
+                // Make widget dynamically sized - override computeSize
+                widget.computeSize = (width) => {
+                    const nodeHeight = this.size ? this.size[1] : 500;
+                    const widgetHeight = Math.max(300, nodeHeight - 80); // 80px for title bar + padding
+                    return [width, widgetHeight];
+                };
 
                 // Store iframe reference
                 this.fbxIframe = iframe;
@@ -344,6 +341,38 @@ app.registerExtension({
                         }
                     }
                 });
+
+                // Override onResize to update container height when node is resized
+                const originalOnResize = this.onResize;
+                this.onResize = function(size) {
+                    if (originalOnResize) {
+                        originalOnResize.apply(this, arguments);
+                    }
+                    const containerHeight = Math.max(300, size[1] - 80);
+                    container.style.height = containerHeight + "px";
+                    console.log(`[FBXPreview] Node resized to: ${size[0]}x${size[1]}, container height: ${containerHeight}px`);
+                };
+
+                // Override onDrawForeground to ensure container height syncs on every frame
+                const originalOnDrawForeground = this.onDrawForeground;
+                this.onDrawForeground = function(ctx) {
+                    if (originalOnDrawForeground) {
+                        originalOnDrawForeground.apply(this, arguments);
+                    }
+                    // Update container height based on current node size
+                    const containerHeight = Math.max(300, this.size[1] - 80);
+                    if (container.style.height !== containerHeight + "px") {
+                        container.style.height = containerHeight + "px";
+                    }
+                };
+
+                // Set initial node size
+                const nodeWidth = Math.max(400, this.size[0] || 400);
+                const nodeHeight = 500; // Initial height: viewer (420) + overhead (80)
+                this.setSize([nodeWidth, nodeHeight]);
+
+                // Set initial container height
+                container.style.height = "420px";
 
                 console.log("[FBXPreview] Node setup complete");
                 return result;

@@ -30,6 +30,7 @@ class SaveSMPL:
     RETURN_TYPES = ("STRING", "STRING")
     RETURN_NAMES = ("file_path", "info")
     FUNCTION = "save_smpl"
+    OUTPUT_NODE = True
     CATEGORY = "MotionCapture/SMPL"
 
     def save_smpl(

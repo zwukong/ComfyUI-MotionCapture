@@ -42,6 +42,7 @@ class SMPLToFBX:
     RETURN_TYPES = ("STRING", "STRING")
     RETURN_NAMES = ("output_fbx_path", "info")
     FUNCTION = "retarget"
+    OUTPUT_NODE = True
     CATEGORY = "MotionCapture"
 
     def retarget(
@@ -163,7 +164,6 @@ class SMPLToFBX:
         local_blender = Path(__file__).parent.parent / "lib" / "blender"
 
         if local_blender.exists():
-            from pathlib import Path
             import platform
 
             system = platform.system().lower()
@@ -373,6 +373,10 @@ def retarget_smpl_to_armature(target_armature, smpl_params, fps, rig_type):
     bones_skipped = 0
 
     for joint_idx, smpl_joint_name in enumerate(SMPL_JOINTS):
+        # Skip hips - its rotation is handled by global_orient
+        if smpl_joint_name == "hips":
+            continue
+
         # Get target bone name from mapping
         target_bone_name = bone_mapping.get(smpl_joint_name)
 
@@ -394,7 +398,9 @@ def retarget_smpl_to_armature(target_armature, smpl_params, fps, rig_type):
             bpy.context.scene.frame_set(frame_idx + 1)
 
             # Get axis-angle rotation from body_pose (3D vector)
-            axis_angle = body_pose[frame_idx, joint_idx]  # (3,)
+            # Note: body_pose excludes hips (joint 0), so subtract 1 from index
+            body_pose_idx = joint_idx - 1
+            axis_angle = body_pose[frame_idx, body_pose_idx]  # (3,)
 
             # Convert axis-angle to rotation matrix
             angle = np.linalg.norm(axis_angle)

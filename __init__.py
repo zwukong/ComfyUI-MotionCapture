@@ -24,6 +24,7 @@ from .nodes.load_smpl_node import LoadSMPL
 from .nodes.retarget_node import SMPLToFBX
 from .nodes.fbx_loader_node import LoadFBXCharacter
 from .nodes.fbx_preview_node import FBXPreview
+from .nodes.fbx_animation_viewer_node import FBXAnimationViewer
 
 # ComfyUI node registration
 NODE_CLASS_MAPPINGS = {
@@ -35,6 +36,7 @@ NODE_CLASS_MAPPINGS = {
     "SMPLToFBX": SMPLToFBX,
     "LoadFBXCharacter": LoadFBXCharacter,
     "FBXPreview": FBXPreview,
+    "FBXAnimationViewer": FBXAnimationViewer,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -46,6 +48,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "SMPLToFBX": "SMPL to FBX Retargeting",
     "LoadFBXCharacter": "Load FBX Character",
     "FBXPreview": "FBX 3D Preview",
+    "FBXAnimationViewer": "FBX Animation Viewer",
 }
 
 # Module info
@@ -64,6 +67,7 @@ print(f"  - LoadSMPL: Load SMPL motion data from disk")
 print(f"  - SMPLToFBX: Retarget SMPL motion to FBX characters")
 print(f"  - LoadFBXCharacter: Load FBX files with folder browser")
 print(f"  - FBXPreview: Interactive 3D FBX viewer")
+print(f"  - FBXAnimationViewer: Animated FBX playback viewer")
 print(f"{'='*60}\n")
 
 # Web extensions path for ComfyUI

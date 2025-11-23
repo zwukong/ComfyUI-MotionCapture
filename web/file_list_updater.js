@@ -84,7 +84,11 @@ function setupDynamicFileList(node, nodeType) {
     };
 
     // Initial load - fetch files for current source_folder value
-    refreshFileList(fileWidget, apiRoute, sourceFolderWidget.value);
+    setTimeout(() => {
+        if (fileWidget && sourceFolderWidget) {
+            refreshFileList(fileWidget, apiRoute, sourceFolderWidget.value);
+        }
+    }, 10); // 10ms delay to allow widgets to fully initialize
 }
 
 app.registerExtension({
